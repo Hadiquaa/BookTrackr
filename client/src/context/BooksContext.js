@@ -3,6 +3,10 @@ import { createContext ,useContext, useState } from "react";
 const BooksContext =  createContext();
 export const useBooks = () => useContext(BooksContext);
 
+const BASE_URL = process.env.REACT_APP_BACKEND_URL || "http://localhost:8004";
+
+console.log(process.env.REACT_APP_BACKEND_URL);
+
 export const BooksProvider = ({children}) => {
     const [books,setBooks] = useState([]);
     const [searchResult, setSearchResult] = useState([]);
@@ -10,7 +14,7 @@ export const BooksProvider = ({children}) => {
 
     const fetchBooks =async () => {
         try {
-            const res = await fetch("http://localhost:8004/api/books");
+            const res = await fetch(`${BASE_URL}/api/books`);
             if(!res.ok)
                 throw new Error("Failed to fetch");
             const data = await res.json();
@@ -22,7 +26,7 @@ export const BooksProvider = ({children}) => {
 
     const updateBook =async (id,updatedBook) => {
         try {
-            const res = await fetch(`http://localhost:8004/api/books/${id}`, {
+            const res = await fetch(`${BASE_URL}/api/books/${id}`, {
                 method:"PUT",
                 headers: { 'Content-Type' : 'application/json'},
                 body: JSON.stringify(updatedBook)
@@ -38,7 +42,7 @@ export const BooksProvider = ({children}) => {
         const confirmDelete = window.confirm("Are you sure you want to delete this book?");
         if(!confirmDelete) return;
         try {
-            const res = await fetch(`http://localhost:8004/api/books/${id}`, {
+            const res = await fetch(`${BASE_URL}/api/books/${id}`, {
                 method: "DELETE"
             });
             if(!res.ok)
@@ -51,7 +55,7 @@ export const BooksProvider = ({children}) => {
 
     const addBook = async(newBook) => {
         try {
-            const res = await fetch(`http://localhost:8004/api/books`, {
+            const res = await fetch(`${BASE_URL}/api/books`, {
                 method: "POST",
                 headers: {'Content-Type' : 'application/json'},
                 body: JSON.stringify(newBook)
@@ -66,7 +70,7 @@ export const BooksProvider = ({children}) => {
     }
     const searchBooks =async (query) => {
         try {
-            const res = await fetch(`http://localhost:8004/api/books?title=${query}`);
+            const res = await fetch(`${BASE_URL}/api/books?title=${query}`);
             if(!res.ok)
                 throw new Error("Failed to fetch");
             const data = await res.json();
