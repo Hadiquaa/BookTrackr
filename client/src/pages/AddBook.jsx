@@ -21,7 +21,11 @@ const AddBook = () => {
     };
     const addNewBook = async (e) => {
         e.preventDefault();
-        await addBook(formData);
+        const bookToAdd = {
+          ...formData,
+          rating: formData.rating === "" ? null : Number(formData.rating),
+        };
+        await addBook(bookToAdd);
         setFormData({
           title: "",
           author: "",

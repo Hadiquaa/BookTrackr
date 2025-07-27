@@ -23,11 +23,16 @@ const Home = () => {
         }))
     };
 
-    const handleEditSubmit =async (e) => {
+    const handleEditSubmit = async (e) => {
         e.preventDefault();
-        await updateBook(editingBook.id, editingBook);
-        setShowModal(false);
-    }
+        const result = await updateBook(editingBook._id, editingBook);
+        if (result.success) {
+          setEditingBook(null);
+          setShowModal(false);
+        } else {
+          alert(result.error || 'Failed to update book');
+        }
+      };
   return (
     <div className="max-w-5xl max-auto p-6 bg-white rounded-xl shadow-lg">
       <h1 className="text-2xl font-bold mb-4 text-blue-700">All Books:</h1>
@@ -35,7 +40,7 @@ const Home = () => {
         {Array.isArray(books) && books.length > 0 ? (
           books.map((book) => (
             <BookCard
-              key={book.id}
+              key={book._id}
               book={book}
               onDelete={deleteBook}
               onEdit={handleEdit}

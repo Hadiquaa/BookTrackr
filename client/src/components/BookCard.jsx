@@ -48,7 +48,7 @@ const BookCard = ({book,onDelete,onEdit}) => {
         <button
           className="bg-red-100 hover:bg-red-200 text-red-600 p-2 rounded-full shadow-sm transition"
           title="Delete"
-          onClick={() => onDelete(book.id)}
+          onClick={() => onDelete(book._id)}
         >
           <MdDeleteOutline size={18} />
         </button>

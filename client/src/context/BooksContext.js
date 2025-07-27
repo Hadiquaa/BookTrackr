@@ -24,18 +24,28 @@ export const BooksProvider = ({children}) => {
         }
     }
 
-    const updateBook =async (id,updatedBook) => {
+    const updateBook = async (id, updatedBook) => {
         try {
             const res = await fetch(`${BASE_URL}/api/books/${id}`, {
-                method:"PUT",
-                headers: { 'Content-Type' : 'application/json'},
+                method: "PUT",
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedBook)
             });
-            if(!res.ok)
-                throw new Error('Failed to update book');
-            setBooks((prev) => prev.map((book) => (book.id === id ? updatedBook : book)))
+
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.message || 'Failed to update book');
+            }
+
+            const updatedData = await res.json();
+            setBooks((prev) => prev.map((book) => 
+                book._id === id ? updatedData : book
+            ));
+            return { success: true, data: updatedData };
+            
         } catch (error) {
-            console.log(error);
+            console.error('Update book error:', error);
+            return { success: false, error: error.message };
         }
     }
     const deleteBook =async (id) => {
@@ -47,7 +57,8 @@ export const BooksProvider = ({children}) => {
             });
             if(!res.ok)
                 throw new Error("Failed to delete");
-            setBooks((prev) => prev.filter((book) => book.id !== id));
+            setBooks((prev) => prev.filter((book) => book._id !== id));
+           
         } catch (error) {
             console.log(error)
         }
@@ -64,6 +75,7 @@ export const BooksProvider = ({children}) => {
                 throw new Error("Failed to add new book");
             const added = await res.json();
             setBooks((prev) => [...prev,added]);
+            
         } catch (error) {
             console.log(error)
         }

@@ -1,111 +1,100 @@
-let books = [
-  {
-    id: 1,
-    title: "Atomic Habits",
-    author: "James Clear",
-    genre: "Self-help",
-    status: "Completed",
-    rating: 5,
-    notes: "Great strategies for building consistent habits.",
-  },
-  {
-    id: 2,
-    title: "The Hobbit",
-    author: "J.R.R. Tolkien",
-    genre: "Fantasy",
-    status: "In Progress",
-    rating: null,
-    notes: "",
-  },
-  {
-    id: 3,
-    title: "Deep Work",
-    author: "Cal Newport",
-    genre: "Productivity",
-    status: "Planned",
-    rating: null,
-    notes: "Recommended by Ali Abdaal.",
-  },
-  {
-    id: 4,
-    title: "The Alchemist",
-    author: "Paulo Coelho",
-    genre: "Fiction",
-    status: "Completed",
-    rating: 4,
-    notes: "Inspiring, but slightly overrated for my taste.",
-  },
-  {
-    id: 5,
-    title: "Clean Code",
-    author: "Robert C. Martin",
-    genre: "Programming",
-    status: "In Progress",
-    rating: null,
-    notes: "Useful tips for writing maintainable code.",
-  },
-  {
-    id: 6,
-    title: "Becoming",
-    author: "Michelle Obama",
-    genre: "Biography",
-    status: "Planned",
-    rating: null,
-    notes: "",
-  },
-];
+import { getDB } from "../db.js";
+import { ObjectId } from "mongodb";
 
-let nextId = Math.max(...books.map((b) => b.id)) + 1;
+export const getBooks = async (req, res) => {
+  try {
+    const db = getDB();
+    const {title, genre} = req.query;
+    let query = {};
+     if (title) query.title = { $regex: title, $options: "i" };
+     if (genre) query.genre = { $regex: genre, $options: "i" };
 
-export const getBooks = (req,res) => {
-    const title = req.query.title;
-    const genre = req.query.genre;
-    let result = books;
-    if(genre){
-        result = books.filter((book) => book.genre.toLowerCase().includes(genre.toLowerCase()));
-       
+     const books = await db.collection("books").find(query).toArray();
+     res.json(books);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching books" });
+  }
+};
+
+export const getBooksById = async (req, res) => {
+  try {
+    const db = getDB();
+    const id = req.params.id;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
     }
-    if(title){
-        result = books.filter((book) => book.title.toLowerCase().includes(title.toLowerCase()));
-       
+    const book = await db
+      .collection("books")
+      .findOne({ _id: new ObjectId(id) });
+    if (!book) {
+      return res.status(404).json({ message: "Book not found" });
     }
-    res.json(result);
-}
-
-export const getBooksById = (req,res) => {
-    const id = parseInt(req.params.id);
-    const book = books.find((book) => book.id === id);
-    if(!book)
-        res.status(404).json({message : "ID not found"});
     res.json(book);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching book" });
+  }
+  // const id = parseInt(req.params.id);
+  // const book = books.find((book) => book.id === id);
+  // if (!book) res.status(404).json({ message: "ID not found" });
+  // res.json(book);
+};
 
-}
+export const addBook =async (req, res) => {
+  try {
+    const db = getDB();
+    const newBook = { ...req.body, _id: new ObjectId() };
+    const result = await db.collection("books").insertOne(newBook);
+    res.status(201).json({ ...newBook, _id: result.insertedId });
+  } catch (error) {
+    res.status(500).json({ message: "Error adding book" });
+  }
+};
 
-export const addBook = (req,res) => {
-    const newBook = {id: nextId++, ...req.body};
-    books.push(newBook);
-    res.status(201).json( newBook);
-}
+export const updateBook = async (req, res) => {
+  try {
+    const db = getDB();
+    const id = req.params.id;
 
-export const updateBook = (req,res) => {
-    const id = parseInt(req.params.id);
-    const index = books.findIndex((book) => book.id === id);
-    if(index !== -1){
-        books[index] = {...books[index], ...req.body};
-        res.status(201).json(books[index]);
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
     }
-    else{
-        res.status(404).json({message: "Id Not Found"});
+
+    const updatedBook = { ...req.body };
+    delete updatedBook._id; // Remove _id from update if present
+
+    const result = await db.collection("books").findOneAndUpdate(
+      { _id: new ObjectId(id) },
+      { $set: updatedBook },
+      { returnDocument: "after" }
+    );
+
+    // In MongoDB 6.x, the result is the document itself
+    if (!result) {
+      return res.status(404).json({ message: "Book not found" });
     }
 
-}
-export const deleteBook = (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = books.findIndex((book) => book.id === id);
-  if (index !== -1) {
-   const deleted = books.splice(index,1)[0]
-    res.status(201).json({message: "Deleted", deleted});
-  } else {
-    res.status(404).json({ message: "Id Not Found" });
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error updating book:", error);
+    res.status(500).json({ message: "Error updating book", error: error.message });
+  }
+};
+export const deleteBook = async (req, res) => {
+  try {
+    const db = getDB();
+    const id = req.params.id;
+
+    const result = await db
+      .collection("books")
+      .deleteOne({ _id: new ObjectId(id) });
+
+    if (result.deletedCount === 0)
+      return res.status(404).json({ message: "Book not found" });
+
+    res.json({ message: "Book deleted" });
+  } catch (error) {
+    res
+      .status(400)
+      .json({ message: "Failed to delete book", error: error.message });
   }
 };
